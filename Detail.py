@@ -184,16 +184,15 @@ class DetailPWidget(DetailWidget):
         nom_fichier=self.mw.metadataTab.BuildFileName(nom_geomOutils, nom_materiau, nom_Vc, nom_F)
         #print(nom_fichier)
         #Création du dossierUsin
-        dossierUsin="usinage/P"
-        print("test1")
-        dossierUsin=self.mw.metadataTab.dossierUsin()
-        print("test2")
+        dossierUsin=self.mw.dossierU
         print(dossierUsin)
         #self.mw.metadataTab.dossierUsin()
-        print(dossierUsin+'/'+'P-'+nom_fichier)
         # Lecture fichier
-        print(self.mw.ApplicationUsinage.LireFichier())
-        signal=self.mw.ApplicationUsinage.LireFichier(dossierUsin+'/'+nom_fichier,"perçage")
+        print("test")
+        chemin=dossierUsin+'/'+nom_fichier
+        print(chemin)
+        signal=self.mw.LireFichier(chemin,"perçage")
+        print("test2")
         print(signal)
         self.Fx=signal.Fx()
         self.Fy=signal.Fy()
