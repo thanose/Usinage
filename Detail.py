@@ -78,6 +78,7 @@ class DetailPWidget(DetailWidget):
         self.materiauxU  = QComboBox(self)
         self.Vc          = QComboBox(self)
         self.F           = QComboBox(self)
+        self.valide      = QPushButton("cliquez moi")
 
         # L'attribut materiau sert à la mémorisation du matériau choisi,
         # qui est indispensable car la liste des valeurs 'Vc' et 'f'
@@ -100,13 +101,14 @@ class DetailPWidget(DetailWidget):
         self.materiauxU.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.Vc.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.F.setSizeAdjustPolicy(QComboBox.AdjustToContents)
-        # Toute modification du choix d'un QComboBox est associé à la
+        # Toute modification du choix d'un QComboBox est associ à la
         # méthode privée <build_file_name> :
-        self.materiauxU.addItems(self.mw.metadataTab.listMateriaux)
-        self.geomOutils.addItems(self.mw.metadataTab.listGeomOutils)
+        self.materiauxU.addItems(['Choix materiaux'] + self.mw.metadataTab.listMateriaux)
+        self.geomOutils.addItems(['Choix outils'] + self.mw.metadataTab.listGeomOutils)
 
         #self.geomOutils.activated.connect(self.FillComboBoxes)
         self.materiauxU.activated.connect(self.FillComboBoxes)
+        self.valide.clicked.connect(self.__ForgerNomFichier)
         #### A FAIRE POUR TOUS LES COMBOS...
 
         # Réglages Matplolib :
@@ -143,6 +145,10 @@ class DetailPWidget(DetailWidget):
         label = QLabel("mm/tour", self)
         hbox.addWidget(label)
 
+        label = QLabel("Valider la sélection",self)
+        hbox.addWidget(label)
+        hbox.addWidget(self.valide)
+        
         hbox.addStretch()
         vbox.addLayout(hbox)
 
@@ -171,35 +177,22 @@ class DetailPWidget(DetailWidget):
         ######## <Méthode ForgerNomFichier à écrire> #######################
         ####################################################################
         nom_geomOutils=str(self.geomOutils.currentText()) 
-        print(nom_geomOutils)
         nom_materiau=str(self.materiauxU.currentText())  
-        print(nom_materiau)
         nom_Vc=str(self.Vc.currentText())          
-        print(nom_Vc)
         nom_F=str(self.F.currentText())
-        print(nom_F)
         
         # Création nom fichier
-        #nom_fichier=nom_geomOutils+'-'+nom_materiau+'-Vc'+nom_Vc+'-f'+nom_F+'BCDry.txt'
         nom_fichier=self.mw.metadataTab.BuildFileName(nom_geomOutils, nom_materiau, nom_Vc, nom_F)
-        #print(nom_fichier)
         #Création du dossierUsin
         dossierUsin=self.mw.dossierU
-        print(dossierUsin)
-        #self.mw.metadataTab.dossierUsin()
-        # Lecture fichier
-        print("test")
         chemin=dossierUsin+'/'+nom_fichier
-        print(chemin)
         signal=self.mw.LireFichier(chemin,"perçage")
-        print("test2")
-        print(signal)
-        self.Fx=signal.Fx()
-        self.Fy=signal.Fy()
-        self.Fz=signal.Fz()
-        self.C=signal.C()
-        
-        #self.Plot()
+        self.Fx=signal.Fx
+        self.Fy=signal.Fy
+        self.Fz=signal.Fz
+        self.C=signal.C
+        self.T=signal.timeValues
+        self.Plot()
 
 
 
@@ -223,19 +216,11 @@ class DetailPWidget(DetailWidget):
         ####################################################################
         ######## <Méthode ForgerNomFichier à écrire> #######################
         ####################################################################
-
-
-        self.geomOutils.clear()
+        
         self.Vc.clear()
         self.F.clear()
         self.Vc.addItems(self.mw.metadataTab.dicoMatVc[self.materiauxU.currentText()])
         self.F.addItems(self.mw.metadataTab.dicoMatF[self.materiauxU.currentText()])
-        self.geomOutils.addItems(self.mw.metadataTab.listGeomOutils)
-        
-        self.materiauxU.activated.connect(self.__ForgerNomFichier)
-        self.geomOutils.activated.connect(self.__ForgerNomFichier)
-        self.Vc.activated.connect(self.__ForgerNomFichier)
-        self.F.activated.connect(self.__ForgerNomFichier)
             #Petite difficulté : trier correctement les listes que vous injectez
            #dans une boîte combo pour que celle-ci affiche ses items dans le
            #bon ordre... Pas compris
@@ -259,12 +244,13 @@ class DetailPWidget(DetailWidget):
 
         Datas = (self.Fx,self.Fy,self.Fz,self.C)
         Legende=("FX","FY","FZ","C")
-        for (axes,Y,L) in zip(self.axes,Datas,Legende):
-            axes.clear()
-            axes.canvas.draw()
-            axes.plot(T,Y)
-            axes.label(L)
-            
+
+        for k in range(0,4):
+            self.axes[k].clear()
+            self.axes[k].plot(self.T,Datas[k])
+            self.axes[k].set_xlabel('Time s')
+            self.axes[k].set_ylabel(Legende[k])
+        self.canvas.draw()
 
 
 
@@ -291,13 +277,14 @@ class DetailTWidget(DetailWidget):
         self.Vc          = QComboBox(self)
         self.F           = QComboBox(self)
         self.ap          = QComboBox(self)
+        self.valide      = QPushButton("Tracer")
         # L'attribut materiau sert à la mémorisation du matériau choisi,
         # qui est indispensable car la liste des valeurs 'Vc' et 'f'
         # qui alimentant les combos dépend du matériau :
         self.materiau    = ""
 
         # Initialisation des systèmes d'axes de tracé :
-        self.AxesSuplot(4)
+        self.AxesSuplot(3)
 
         # Mise en place des widgets de l'interface GUI :
         self.__initUI()
@@ -315,11 +302,12 @@ class DetailTWidget(DetailWidget):
         self.ap.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         # Toute modification du choix d'un QComboBox est associé à la
         # méthode privée <build_file_name> :
-        self.materiauxU.addItems(self.mw.metadataTab.listMateriaux)
-        self.Outils.addItems(self.mw.metadataTab.listOutils)
+        self.materiauxU.addItems(['Choix materiaux'] + self.mw.metadataTab.listMateriaux)
+        self.Outils.addItems(['Choix outils'] + self.mw.metadataTab.listOutils)
 
         #self.geomOutils.activated.connect(self.FillComboBoxes)
         self.Outils.activated.connect(self.FillComboBoxes)
+        self.valide.clicked.connect(self.__ForgerNomFichier)
         #### A FAIRE POUR TOUS LES COMBOS...
 
         # Réglages Matplolib :
@@ -362,6 +350,10 @@ class DetailTWidget(DetailWidget):
         label = QLabel("mm", self)
         hbox.addWidget(label)
         
+        label = QLabel("Valider la sélection",self)
+        hbox.addWidget(label)
+        hbox.addWidget(self.valide)
+        
         hbox.addStretch()
         vbox.addLayout(hbox)
 
@@ -390,34 +382,24 @@ class DetailTWidget(DetailWidget):
         ######## <Méthode ForgerNomFichier à écrire> #######################
         ####################################################################
         nom_geomOutils=str(self.Outils.currentText()) 
-        print(nom_geomOutils)
         nom_materiau=str(self.materiauxU.currentText())  
-        print(nom_materiau)
         nom_Vc=str(self.Vc.currentText())          
-        print(nom_Vc)
         nom_F=str(self.F.currentText())
-        print(nom_F)
         nom_ap=str(self.ap.currentText())
         # Création nom fichier
         #nom_fichier=nom_geomOutils+'-'+nom_materiau+'-Vc'+nom_Vc+'-f'+nom_F+'Dry.txt'
         nom_fichier=self.mw.metadataTab.BuildFileName(nom_geomOutils, nom_materiau, nom_Vc, nom_F, nom_ap)
-        print(nom_fichier)
         #Création du dossierUsin
-        dossierUsin="usinage/T"
-        dossierUsin=self.mw.metadataTab.dossierUsin()
+        #dossierUsin="usinage/T"
+        dossierUsin=self.mw.dossierU
         
-        #self.mw.metadataTab.dossierUsin()
-        print(dossierUsin+'/'+'T-'+nom_fichier)
-        # Lecture fichier
-        print(self.mw.ApplicationUsinage.LireFichier())
-        signal=self.mw.ApplicationUsinage.LireFichier(dossierUsin+'/'+nom_fichier,"tournage")
-        print(signal)
-        self.Fx=signal.Fx()
-        self.Fy=signal.Fy()
-        self.Fz=signal.Fz()
-        self.C=signal.C()
-        
-        #self.Plot()
+        chemin=dossierUsin+'/'+nom_fichier
+        signal=self.mw.LireFichier(chemin,"tournage")
+        self.Fx=signal.Fx
+        self.Fy=signal.Fy
+        self.Fz=signal.Fz
+        self.T=signal.timeValues
+        self.Plot()
 
 
 
@@ -449,20 +431,11 @@ class DetailTWidget(DetailWidget):
         self.Vc.addItems(self.mw.metadataTab.dicoOutilVc[self.Outils.currentText()])
         self.F.addItems(self.mw.metadataTab.dicoOutilF[self.Outils.currentText()])
         self.ap.addItems(self.mw.metadataTab.dicoOutilAp[self.Outils.currentText()])
-        #self.materiauxU.addItems(self.mw.metadataTab.listGeomOutils)
-        
-        self.materiauxU.activated.connect(self.__ForgerNomFichier)
-        self.Outils.activated.connect(self.__ForgerNomFichier)
-        self.Vc.activated.connect(self.__ForgerNomFichier)
-        self.F.activated.connect(self.__ForgerNomFichier)
-        self.ap.activated.connect(self.__ForgerNomFichier)
-            #Petite difficulté : trier correctement les listes que vous injectez
-           #dans une boîte combo pour que celle-ci affiche ses items dans le
-           #bon ordre... Pas compris
 
         ####################################################################
 
         
+
 
 
     def Plot(self):
@@ -478,15 +451,17 @@ class DetailTWidget(DetailWidget):
         ####################################################################
         ######## <Méthode Plot à écrire> #######################
         ####################################################################
-#créer la lsite de temps
-        Datas = (self.Fx,self.Fy,self.Fz,self.C)
-        Legende=("FX","FY","FZ","C")
-        for (axes,Y,L) in zip(self.axes,Datas,Legende):
-            axes.clear()
-            axes.canvas.draw()
-            axes.plot(T,Y)
-            axes.label(L)
-            
+
+        Datas = (self.Fx,self.Fy,self.Fz)
+        Legende=("FX","FY","FZ")
+
+        for k in range(0,3):
+            self.axes[k].clear()
+            self.axes[k].plot(self.T,Datas[k])
+            self.axes[k].set_xlabel('Time s')
+            self.axes[k].set_ylabel(Legende[k])
+        self.canvas.draw()
+
 
         ####################################################################
         ######## classe à écrire par copier/coller/modifier
